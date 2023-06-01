@@ -13,6 +13,7 @@ library(forestplot)
 library(stringr)
 library(purrr)
 library(gt)
+
 ```
 
 ## Example
@@ -22,14 +23,18 @@ Using an export and the `forestplot` R package, you can create analyses like the
 ```{r echo=TRUE}
 findings_df <- 
   read.csv("../data/hypertension_preterm-LBW.csv") %>% 
+  # Filter down based on variable name and statistic type
   filter(str_detect(dependent_variable, "preterm birth"),
          str_detect(independent_variable, "hypertension"),
          stat_type == "Odds Ratio" | stat_type == "Adjusted Odds Ratio") %>% 
-  mutate(formatted_value = ifelse(!is.na(ci_lower) & !is.na(ci_upper), paste0(stat_value, " (", ci_lower, ", ", ci_upper, ")"), stat_value),
+  # Modify columns for forest plot formatting
+  mutate(formatted_value = ifelse(!is.na(ci_lower) & !is.na(ci_upper), 
+                                  sprintf("%s (%s, %s)", stat_value, ci_lower, ci_upper), 
+                                  stat_value),
          ci_lower = ifelse(is.na(ci_lower), stat_value, ci_lower),
          ci_upper = ifelse(is.na(ci_upper), stat_value, ci_upper)) %>% 
   arrange(stat_value)
-  
+
 findings_df %>% 
   forestplot(mean=stat_value,
              lower=ci_lower,
@@ -54,13 +59,14 @@ findings_df %>%
 
 
 findings_df %>% 
+  # Prepare doi column for hyperlink formatting
   mutate(doi = sprintf('<a href = "%s">%s</a>', link, doi), 
          doi = map(doi, gt::html)) %>% 
   select(DOI = doi, Summary = study_summary, Populations = populations) %>%
   gt() %>% 
   cols_align(
-  align = "left",
-  columns = everything()
-)
+    align = "left",
+    columns = everything()
+  )
 
 ```
