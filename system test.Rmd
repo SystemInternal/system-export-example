@@ -1,0 +1,66 @@
+---
+title: "System Export Test"
+date: "2023-05-25"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE)
+library(dplyr)
+library(forestplot)
+library(stringr)
+library(purrr)
+library(gt)
+```
+
+## Export Example
+
+Using an export and the `forestplot` R package, you can create analyses like these in just a couple of lines. In this one, we compare the same statistic type (odds ratio) across a few studies of a relationship.
+
+```{r echo=TRUE}
+findings_df <- 
+  read.csv("data/hypertension_preterm-LBW.csv") %>% 
+  filter(str_detect(dependent_variable, "preterm birth"),
+         str_detect(independent_variable, "hypertension"),
+         stat_type == "Odds Ratio" | stat_type == "Adjusted Odds Ratio") %>% 
+  mutate(formatted_value = ifelse(!is.na(ci_lower) & !is.na(ci_upper), paste0(stat_value, " (", ci_lower, ", ", ci_upper, ")"), stat_value),
+         ci_lower = ifelse(is.na(ci_lower), stat_value, ci_lower),
+         ci_upper = ifelse(is.na(ci_upper), stat_value, ci_upper)) %>% 
+  arrange(stat_value)
+  
+findings_df %>% 
+  forestplot(mean=stat_value,
+             lower=ci_lower,
+             upper=ci_upper,
+             title="Hypertension and Preterm Birth",
+             labeltext=c(doi, independent_variable, formatted_value),
+             boxsize=0.1,
+             xlog = FALSE,
+             xticks=c(0, 1, 2, 3, 4, 5, 6),
+             zero=1,
+             hrzl_lines=TRUE,
+             colgap=unit(0.01, "npc"),
+             align="l",
+             ci.vertices=TRUE,
+             ci.vertices.height=0.025,
+             clip=c(0, 6),
+             txt_gp = fpTxtGp(ticks=gpar(cex=1), label=gpar(cex=0.5))) %>% 
+  fp_set_style(box = "royalblue",
+               line = "darkblue",
+               summary = "royalblue") %>% 
+  fp_add_header(doi="", independent_variable="Indep. Variable", formatted_value = "OR")
+
+
+findings_df %>% 
+  mutate(doi = sprintf('<a href = "%s">%s</a>', link, doi), 
+         doi = map(doi, gt::html)) %>% 
+  select(DOI = doi, Summary = study_summary, Populations = populations) %>%
+  gt() %>% 
+  cols_align(
+  align = "left",
+  columns = everything()
+)
+
+```
