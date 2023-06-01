@@ -1,5 +1,5 @@
 ---
-title: "System Export Test"
+title: "Using a System Pro Export"
 date: "2023-05-25"
 output: 
   html_document:
@@ -15,7 +15,7 @@ library(purrr)
 library(gt)
 ```
 
-## Export Example
+## Example
 
 Using an export and the `forestplot` R package, you can create analyses like these in just a couple of lines. In this one, we compare the same statistic type (odds ratio) across a few studies of a relationship.
 
